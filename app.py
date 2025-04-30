@@ -30,16 +30,19 @@ with st.sidebar:
     score_option = st.selectbox("Max Score", [21, 24, "Custom"])
     score_custom = st.number_input("Skor Custom", min_value=1, max_value=50, value=25) if score_option == "Custom" else None
 
-    if st.button("🎮 Start Match"):
+    # Always update players list from textarea
+    if names_input:
         names = [n.strip() for n in names_input.split("\\n") if n.strip()]
-        if len(names) < 4:
+        st.session_state.players = names
+
+    if st.button("🎮 Start Match"):
+        if len(st.session_state.players) < 4:
             st.warning("Minimal 4 pemain diperlukan untuk mulai.")
         else:
-            st.session_state.players = names
             st.session_state.courts = court_count
             st.session_state.max_score = score_custom if score_option == "Custom" else int(score_option)
             st.session_state.match_started = True
-            pool = names.copy()
+            pool = st.session_state.players.copy()
             random.shuffle(pool)
             st.session_state.current_matches = []
             for i in range(st.session_state.courts):
