@@ -24,26 +24,39 @@ if "match_results" not in st.session_state:
 # SIDEBAR SETUP
 with st.sidebar:
     st.header("🔧 Setup")
-    names_input = st.text_area("Masukkan nama pemain (1 baris = 1 nama):", height=200)
+
+    st.markdown("Masukkan nama pemain satu per satu dan tekan Enter:")
+    new_name = st.text_input("Tambah Nama Pemain", key="new_player")
+    if new_name and st.button("➕ Tambah"):
+        if new_name.strip() != "" and new_name not in st.session_state.players:
+            st.session_state.players.append(new_name.strip())
+        st.experimental_rerun()
+
+    if st.session_state.players:
+        st.markdown("**✅ Pemain Terdaftar:**")
+        st.write(", ".join([f"`{p}`" for p in st.session_state.players]))
+
+    if st.button("🧹 Reset Semua Pemain"):
+        st.session_state.players = []
+
     court_count = st.selectbox("Jumlah Court", [1, 2])
     score_option = st.selectbox("Max Score", [21, 24, "Custom"])
     score_custom = st.number_input("Skor Custom", min_value=1, max_value=50, value=25) if score_option == "Custom" else None
 
     if st.button("🎮 Start Match"):
-        names = [n.strip() for n in names_input.split("\n") if n.strip()]
-        st.session_state.players = names
-        st.session_state.courts = court_count
-        st.session_state.max_score = score_custom if score_option == "Custom" else int(score_option)
-        st.session_state.match_started = True
-
-        # Generate initial matches
-        pool = names.copy()
-        random.shuffle(pool)
-        st.session_state.current_matches = []
-        for i in range(st.session_state.courts):
-            if len(pool) >= 4:
-                st.session_state.current_matches.append(pool[:4])
-                pool = pool[4:]
+        if len(st.session_state.players) < 4:
+            st.warning("Minimal 4 pemain diperlukan untuk mulai.")
+        else:
+            st.session_state.courts = court_count
+            st.session_state.max_score = score_custom if score_option == "Custom" else int(score_option)
+            st.session_state.match_started = True
+            pool = st.session_state.players.copy()
+            random.shuffle(pool)
+            st.session_state.current_matches = []
+            for i in range(st.session_state.courts):
+                if len(pool) >= 4:
+                    st.session_state.current_matches.append(pool[:4])
+                    pool = pool[4:]
 
 # ----------------------------
 # MATCH VIEW + SCORE INPUT
@@ -59,8 +72,10 @@ if st.session_state.match_started:
             col2.text_input("Team B - Player 1", value=match[2], key=f"{i}_b1", disabled=True)
             col2.text_input("Team B - Player 2", value=match[3], key=f"{i}_b2", disabled=True)
 
-            s1 = st.number_input("Skor Team A", 0, st.session_state.max_score, key=f"{i}_s1")
-            s2 = st.number_input("Skor Team B", 0, st.session_state.max_score, key=f"{i}_s2")
+            st.markdown("**🎯 Geser skor untuk Team A (Team B akan otomatis menyesuaikan):**")
+            score_a = st.slider("Score Team A", 0, st.session_state.max_score, value=0, key=f"{i}_score_a")
+            score_b = st.session_state.max_score - score_a
+            st.markdown(f"Score Team B: `{score_b}`")
 
             submitted = st.form_submit_button("✅ Submit Score")
             if submitted:
@@ -69,8 +84,8 @@ if st.session_state.match_started:
                     "court": f"Court {i+1}",
                     "team_a": [match[0], match[1]],
                     "team_b": [match[2], match[3]],
-                    "score_a": s1,
-                    "score_b": s2
+                    "score_a": score_a,
+                    "score_b": score_b
                 })
 
     # Show submitted results
