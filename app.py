@@ -32,7 +32,7 @@ with st.sidebar:
     start_button = st.button("🚀 Mulai Permainan")
 
     if start_button:
-        names = [n.strip() for n in names_input.split("\\n") if n.strip()]
+        names = [n.strip() for n in names_input.split("\n") if n.strip()]
         if len(names) < 4:
             st.warning("Minimal 4 pemain dibutuhkan.")
         else:
