@@ -82,13 +82,13 @@ for court_id in range(1, st.session_state.courts + 1):
         col1.markdown(f"**Team A**: `{match[0]}` & `{match[1]}`")
         col2.markdown(f"**Team B**: `{match[2]}` & `{match[3]}`")
 
+        # Slider shown outside form to allow dynamic display
+        score_a = st.slider(f"🎯 Geser skor untuk Team A (Court {court_id})", 0, st.session_state.max_score, 0, key=f"slider_{court_id}")
+        score_b = st.session_state.max_score - score_a
+        st.markdown(f"**Skor Saat Ini:** Team A = `{score_a}`, Team B = `{score_b}`")
+
         with st.form(f"form_{court_key}"):
-            score_a = st.slider("Score Team A", 0, st.session_state.max_score, 0, key=f"scoreA_{court_id}")
-            score_b = st.session_state.max_score - score_a
-            st.markdown(f"🎯 Score Team B: `{score_b}`")
-
             submitted = st.form_submit_button("✅ Submit Score")
-
             if submitted:
                 result = {
                     "Court": court_id,
