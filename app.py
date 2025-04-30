@@ -99,7 +99,8 @@ for court_id in range(1, st.session_state.courts + 1):
                 for p in match:
                     st.session_state.players[p]["playing"] = False
                 st.session_state.matches[court_key] = None
-                st.experimental_rerun()
+                st.session_state["_rerun_trigger"] = True
+                st.stop()
 
 # --------------------------------
 # Show results history
