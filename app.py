@@ -1,97 +1,117 @@
 import streamlit as st
-import random
 import pandas as pd
+import random
 
-st.set_page_config(page_title="Padel Mexicano", layout="wide")
-st.title("🏓 Padel Mexicano Match Manager")
+st.set_page_config(page_title="Padel Mexicano (Dynamic)", layout="wide")
+st.title("🏓 Padel Mexicano - Dynamic Court Rotation")
 
-# ----------------------------
-# STATE INIT
+# --------------------------------
+# Session State Initialization
 if "players" not in st.session_state:
-    st.session_state.players = []
-if "courts" not in st.session_state:
-    st.session_state.courts = 2
+    st.session_state.players = {}
+if "matches" not in st.session_state:
+    st.session_state.matches = {}
+if "results" not in st.session_state:
+    st.session_state.results = []
 if "max_score" not in st.session_state:
     st.session_state.max_score = 21
-if "current_matches" not in st.session_state:
-    st.session_state.current_matches = []
-if "match_started" not in st.session_state:
-    st.session_state.match_started = False
-if "match_results" not in st.session_state:
-    st.session_state.match_results = []
+if "courts" not in st.session_state:
+    st.session_state.courts = 2
 
-# ----------------------------
-# SIDEBAR SETUP
+# --------------------------------
+# Sidebar Input
 with st.sidebar:
     st.header("🔧 Setup")
-
     names_input = st.text_area("Masukkan nama pemain (1 baris = 1 nama):", height=200)
     court_count = st.selectbox("Jumlah Court", [1, 2])
     score_option = st.selectbox("Max Score", [21, 24, "Custom"])
-    score_custom = st.number_input("Skor Custom", min_value=1, max_value=50, value=25) if score_option == "Custom" else None
+    custom_score = st.number_input("Skor Custom", 1, 50, value=25) if score_option == "Custom" else None
+    start_button = st.button("🚀 Mulai Permainan")
 
-    # Always update players list from textarea
-    if names_input:
-        names = [n.strip() for n in names_input.split("\n") if n.strip()]
-        st.session_state.players = names
-
-    if st.button("🎮 Start Match"):
-        if len(st.session_state.players) < 4:
-            st.warning("Minimal 4 pemain diperlukan untuk mulai.")
+    if start_button:
+        names = [n.strip() for n in names_input.split("\\n") if n.strip()]
+        if len(names) < 4:
+            st.warning("Minimal 4 pemain dibutuhkan.")
         else:
+            st.session_state.players = {name: {"points": 0, "playing": False} for name in names}
+            st.session_state.matches = {}
+            st.session_state.results = []
+            st.session_state.max_score = custom_score if score_option == "Custom" else int(score_option)
             st.session_state.courts = court_count
-            st.session_state.max_score = score_custom if score_option == "Custom" else int(score_option)
-            st.session_state.match_started = True
-            pool = st.session_state.players.copy()
-            random.shuffle(pool)
-            st.session_state.current_matches = []
-            for i in range(st.session_state.courts):
-                if len(pool) >= 4:
-                    st.session_state.current_matches.append(pool[:4])
-                    pool = pool[4:]
 
-# ----------------------------
-# MATCH VIEW + SCORE INPUT
-if st.session_state.match_started:
-    st.subheader("🎾 Current Matches")
+# --------------------------------
+# Function: Find next 4 free players with closest scores
+def get_next_match():
+    free_players = [p for p, v in st.session_state.players.items() if not v["playing"]]
+    if len(free_players) < 4:
+        return None
+    # Sort by total points to create balanced match
+    sorted_players = sorted(free_players, key=lambda p: st.session_state.players[p]["points"])
+    return sorted_players[:4]
 
-    for i, match in enumerate(st.session_state.current_matches):
-        with st.form(f"court_{i}_form"):
-            st.markdown(f"### 🏟️ Court {i+1}")
-            col1, col2 = st.columns(2)
-            col1.text_input("Team A - Player 1", value=match[0], key=f"{i}_a1", disabled=True)
-            col1.text_input("Team A - Player 2", value=match[1], key=f"{i}_a2", disabled=True)
-            col2.text_input("Team B - Player 1", value=match[2], key=f"{i}_b1", disabled=True)
-            col2.text_input("Team B - Player 2", value=match[3], key=f"{i}_b2", disabled=True)
+# --------------------------------
+# Allocate matches for empty courts
+for court_id in range(1, st.session_state.courts + 1):
+    court_key = f"court_{court_id}"
+    if court_key not in st.session_state.matches or st.session_state.matches[court_key] is None:
+        new_match = get_next_match()
+        if new_match:
+            st.session_state.matches[court_key] = new_match
+            for p in new_match:
+                st.session_state.players[p]["playing"] = True
 
-            st.markdown("**🎯 Geser skor untuk Team A (Team B akan otomatis menyesuaikan):**")
-            score_a = st.slider("Score Team A", 0, st.session_state.max_score, value=0, key=f"{i}_score_a")
+# --------------------------------
+# Display courts and allow score input
+for court_id in range(1, st.session_state.courts + 1):
+    court_key = f"court_{court_id}"
+    match = st.session_state.matches.get(court_key)
+    if match:
+        st.subheader(f"🏟️ Court {court_id}")
+        col1, col2 = st.columns(2)
+        col1.markdown(f"**Team A**: `{match[0]}` & `{match[1]}`")
+        col2.markdown(f"**Team B**: `{match[2]}` & `{match[3]}`")
+
+        with st.form(f"score_form_{court_id}"):
+            score_a = st.slider("Score Team A", 0, st.session_state.max_score, 0, key=f"sa_{court_id}")
             score_b = st.session_state.max_score - score_a
-            st.markdown(f"Score Team B: `{score_b}`")
-
+            st.markdown(f"🎯 Score Team B: `{score_b}`")
             submitted = st.form_submit_button("✅ Submit Score")
             if submitted:
-                st.success("Skor berhasil disimpan!")
-                st.session_state.match_results.append({
-                    "court": f"Court {i+1}",
-                    "team_a": [match[0], match[1]],
-                    "team_b": [match[2], match[3]],
-                    "score_a": score_a,
-                    "score_b": score_b
-                })
+                # Record results
+                result = {
+                    "Court": court_id,
+                    "Team A": f"{match[0]} & {match[1]}",
+                    "Score A": score_a,
+                    "Score B": score_b,
+                    "Team B": f"{match[2]} & {match[3]}"
+                }
+                st.session_state.results.append(result)
 
-    # Show submitted results
-    if st.session_state.match_results:
-        st.subheader("📋 Hasil Pertandingan")
-        df = pd.DataFrame([
-            {
-                "Court": r["court"],
-                "Team A": " & ".join(r["team_a"]),
-                "Score A": r["score_a"],
-                "Score B": r["score_b"],
-                "Team B": " & ".join(r["team_b"]),
-            } for r in st.session_state.match_results
-        ])
-        st.dataframe(df, use_container_width=True)
-else:
-    st.info("Masukkan nama pemain dan tekan 'Start Match' di sidebar.")
+                # Assign points
+                if score_a > score_b:
+                    st.session_state.players[match[0]]["points"] += 1
+                    st.session_state.players[match[1]]["points"] += 1
+                elif score_b > score_a:
+                    st.session_state.players[match[2]]["points"] += 1
+                    st.session_state.players[match[3]]["points"] += 1
+
+                # Free players and clear court
+                for p in match:
+                    st.session_state.players[p]["playing"] = False
+                st.session_state.matches[court_key] = None
+                st.experimental_rerun()
+
+# --------------------------------
+# Show results history
+if st.session_state.results:
+    st.subheader("📋 Hasil Pertandingan")
+    df = pd.DataFrame(st.session_state.results)
+    st.dataframe(df, use_container_width=True)
+
+# --------------------------------
+# Leaderboard
+if st.session_state.players:
+    st.subheader("🏆 Leaderboard")
+    leaderboard = sorted(st.session_state.players.items(), key=lambda x: x[1]["points"], reverse=True)
+    lb_df = pd.DataFrame([{"Pemain": k, "Poin": v["points"]} for k, v in leaderboard])
+    st.dataframe(lb_df, use_container_width=True)
