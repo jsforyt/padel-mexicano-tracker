@@ -68,12 +68,3 @@ if st.button("➡️ Next Round"):
             st.session_state.players = st.session_state.players[4:]
 '''
 
-# Save the file as app.py and requirements.txt
-with open("/mnt/data/app.py", "w") as f:
-    f.write(app_code)
-
-with open("/mnt/data/requirements.txt", "w") as f:
-    f.write("streamlit\npandas")
-
-"✅ File Streamlit app sudah dibuat dan siap digunakan. Kamu bisa download dan upload ke GitHub:"
-
