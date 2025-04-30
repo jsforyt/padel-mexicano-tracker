@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import random
@@ -82,39 +83,52 @@ for court_id in range(1, st.session_state.courts + 1):
         col2.markdown(f"**Team B**: `{match[2]}` & `{match[3]}`")
 
         with st.form(f"form_{court_key}"):
-            score_a = st.slider("Score Team A", 0, st.session_state.max_score, 0, key=f"sa_{court_id}")
-            score_b = st.session_state.max_score - score_a
-            st.markdown(f"🎯 Score Team B: `{score_b}`")
+            c1, c2 = st.columns(2)
+            score_a = c1.number_input("Score Team A", 0, st.session_state.max_score, value=0, key=f"a_{court_id}")
+            score_b = c2.number_input("Score Team B", 0, st.session_state.max_score, value=st.session_state.max_score, key=f"b_{court_id}")
+
+            st.caption(f"🔄 Total maksimal skor untuk kedua tim: {st.session_state.max_score}. Pastikan A + B = {st.session_state.max_score}")
+
             submitted = st.form_submit_button("✅ Submit Score")
 
             if submitted:
-                result = {
-                    "Court": court_id,
-                    "Team A": f"{match[0]} & {match[1]}",
-                    "Score A": score_a,
-                    "Score B": score_b,
-                    "Team B": f"{match[2]} & {match[3]}"
-                }
-                st.session_state.results.append(result)
+                if score_a + score_b != st.session_state.max_score:
+                    st.error(f"Total skor harus {st.session_state.max_score}. Sekarang: {score_a + score_b}")
+                else:
+                    result = {
+                        "Court": court_id,
+                        "Team A": f"{match[0]} & {match[1]}",
+                        "Score A": score_a,
+                        "Score B": score_b,
+                        "Team B": f"{match[2]} & {match[3]}"
+                    }
+                    st.session_state.results.append(result)
 
-                if score_a > score_b:
-                    st.session_state.players[match[0]]["points"] += 1
-                    st.session_state.players[match[1]]["points"] += 1
-                elif score_b > score_a:
-                    st.session_state.players[match[2]]["points"] += 1
-                    st.session_state.players[match[3]]["points"] += 1
+                    if score_a > score_b:
+                        st.session_state.players[match[0]]["points"] += 1
+                        st.session_state.players[match[1]]["points"] += 1
+                    elif score_b > score_a:
+                        st.session_state.players[match[2]]["points"] += 1
+                        st.session_state.players[match[3]]["points"] += 1
 
-                for p in match:
-                    st.session_state.players[p]["playing"] = False
+                    for p in match:
+                        st.session_state.players[p]["playing"] = False
 
-                st.session_state.submitted_scores[court_key] = True
-                updated_courts.append(court_key)
+                    st.session_state.submitted_scores[court_key] = True
+                    updated_courts.append(court_key)
 
 # -----------------------------
 # Update Courts Based on Submission
 for court_key in updated_courts:
     assign_new_match(court_key)
     st.session_state.submitted_scores.pop(court_key, None)
+
+# -----------------------------
+# Show Resting Players
+free_players = [p for p, v in st.session_state.players.items() if not v["playing"]]
+if free_players:
+    st.subheader("😌 Pemain yang sedang istirahat:")
+    st.write(", ".join(free_players))
 
 # -----------------------------
 # Results Table
