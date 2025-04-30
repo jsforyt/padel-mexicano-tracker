@@ -63,5 +63,3 @@ if st.button("➡️ Next Round"):
             match_players = st.session_state.players[:4]
             st.session_state.current_matches.append(match_players)
             st.session_state.players = st.session_state.players[4:]
-'''
-
