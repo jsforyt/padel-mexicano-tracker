@@ -1,6 +1,3 @@
-# Preparing the full source code of a Streamlit app based on the user's specification
-
-app_code = '''
 import streamlit as st
 import pandas as pd
 import random
