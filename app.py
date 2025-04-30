@@ -25,32 +25,21 @@ if "match_results" not in st.session_state:
 with st.sidebar:
     st.header("🔧 Setup")
 
-    st.markdown("Masukkan nama pemain satu per satu dan tekan Enter:")
-    new_name = st.text_input("Tambah Nama Pemain", key="new_player")
-    if new_name and st.button("➕ Tambah"):
-        if new_name.strip() != "" and new_name not in st.session_state.players:
-            st.session_state.players.append(new_name.strip())
-        st.experimental_rerun()
-
-    if st.session_state.players:
-        st.markdown("**✅ Pemain Terdaftar:**")
-        st.write(", ".join([f"`{p}`" for p in st.session_state.players]))
-
-    if st.button("🧹 Reset Semua Pemain"):
-        st.session_state.players = []
-
+    names_input = st.text_area("Masukkan nama pemain (1 baris = 1 nama):", height=200)
     court_count = st.selectbox("Jumlah Court", [1, 2])
     score_option = st.selectbox("Max Score", [21, 24, "Custom"])
     score_custom = st.number_input("Skor Custom", min_value=1, max_value=50, value=25) if score_option == "Custom" else None
 
     if st.button("🎮 Start Match"):
-        if len(st.session_state.players) < 4:
+        names = [n.strip() for n in names_input.split("\\n") if n.strip()]
+        if len(names) < 4:
             st.warning("Minimal 4 pemain diperlukan untuk mulai.")
         else:
+            st.session_state.players = names
             st.session_state.courts = court_count
             st.session_state.max_score = score_custom if score_option == "Custom" else int(score_option)
             st.session_state.match_started = True
-            pool = st.session_state.players.copy()
+            pool = names.copy()
             random.shuffle(pool)
             st.session_state.current_matches = []
             for i in range(st.session_state.courts):
