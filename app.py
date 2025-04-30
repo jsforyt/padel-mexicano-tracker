@@ -32,7 +32,7 @@ with st.sidebar:
 
     # Always update players list from textarea
     if names_input:
-        names = [n.strip() for n in names_input.split("\\n") if n.strip()]
+        names = [n.strip() for n in names_input.split("\n") if n.strip()]
         st.session_state.players = names
 
     if st.button("🎮 Start Match"):
